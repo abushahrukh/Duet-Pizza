@@ -14,6 +14,7 @@ import base64
 import warnings
 warnings.filterwarnings('ignore')
 pd.options.mode.chained_assignment = None
+
 # ==================== IMAGE LOADING ====================
 def load_image_b64(filename):
     base_dir = os.path.dirname(os.path.abspath(__file__))
@@ -880,88 +881,76 @@ with tab6:
     else:
         st.info("No ingredient data")
 
-# ========== TAB 7: FULL REPORT ==========
+# ========== TAB 7: FULL REPORT (CORRECTED) ==========
 with tab7:
     st.markdown("## Export Report")
     st.markdown("Download comprehensive analysis.")
     st.markdown("---")
-    
+
     # Compile Report
     orders_copy = orders.copy()
 
-# Modern pandas-safe hourly binning
-orders_copy["hour_bin"] = orders_copy["datetime"].dt.floor("h")
+    # Feature engineering (same as in Tab 2, needed for anomaly detection)
+    orders_copy["hour"]        = orders_copy["datetime"].dt.hour
+    orders_copy["day_of_week"] = orders_copy["datetime"].dt.dayofweek
+    orders_copy["month"]       = orders_copy["datetime"].dt.month
+    orders_copy["is_weekend"]  = (orders_copy["day_of_week"] >= 5).astype(int)
 
-# Aggregate hourly order counts
-hourly = (
-    orders_copy.groupby("hour_bin")
-    .size()
-    .reset_index(name="count")
-)
-
-# Fill missing hours
-hourly = (
-    hourly.set_index("hour_bin")
-    .asfreq("h", fill_value=0)
-    .reset_index()
-)
-
-hourly = hourly.sort_values("hour_bin").reset_index(drop=True)
-    
+    # Temporal anomalies (fixed contamination for the report)
     X_time = orders_copy[["hour", "day_of_week", "month", "is_weekend"]]
     model_time = IsolationForest(contamination=0.05, random_state=42)
     orders_copy["anomaly"] = model_time.fit_predict(X_time)
-    temporal_anomalies = orders_copy[orders_copy["anomaly"] == -1][["order_id", "date", "time"]].head(50)
-    
-    # Sales Anomalies
-    pizza_sales_sum = filtered_sales.groupby(["name", "size", "category"]).agg({
-        "quantity": "sum",
-        "price": "first"
-    }).reset_index()
-    
+    temporal_anomalies = orders_copy[orders_copy["anomaly"] == -1][
+        ["order_id", "date", "time"]
+    ].head(50)
+
+    # Sales anomalies
+    pizza_sales_sum = filtered_sales.groupby(["name", "size", "category"]).agg(
+        {"quantity": "sum", "price": "first"}
+    ).reset_index()
+
     le = LabelEncoder()
     pizza_sales_sum["cat_code"] = le.fit_transform(pizza_sales_sum["category"])
     X_sales = pizza_sales_sum[["quantity", "price", "cat_code"]]
     model_sales = IsolationForest(contamination=0.1, random_state=42)
     pizza_sales_sum["sales_anomaly"] = model_sales.fit_predict(X_sales)
-    sales_anomalies = pizza_sales_sum[pizza_sales_sum["sales_anomaly"] == -1][
-        ["name", "size", "category", "quantity", "price"]
-    ]
-    
-    # Summary
+    sales_anomalies = pizza_sales_sum[
+        pizza_sales_sum["sales_anomaly"] == -1
+    ][["name", "size", "category", "quantity", "price"]]
+
+    # Summary metrics
     st.markdown("### Contents")
     col1, col2, col3, col4 = st.columns(4)
     col1.metric("Time Anomalies", len(temporal_anomalies))
     col2.metric("Sales Anomalies", len(sales_anomalies))
     col3.metric("Period", f"{start_date.date()}")
     col4.metric("Days", f"{(end_date - start_date).days}")
-    
+
     st.markdown("---")
-    
+
     if len(temporal_anomalies) > 0 or len(sales_anomalies) > 0:
         report_data = []
-        
         if len(temporal_anomalies) > 0:
             temporal_anomalies["type"] = "Time"
-            report_data.append(temporal_anomalies[["order_id", "date", "time", "type"]])
-        
+            report_data.append(
+                temporal_anomalies[["order_id", "date", "time", "type"]]
+            )
         if len(sales_anomalies) > 0:
             sales_anomalies["type"] = "Sales"
             report_data.append(sales_anomalies[["name", "type"]])
-        
-        if report_data:
-            final_report = pd.concat(report_data, ignore_index=True)
-            csv = final_report.to_csv(index=False)
-            
-            st.download_button(
-                label=" Download Report (CSV)",
-                data=csv,
-                file_name=f"report_{start_date.date()}_{end_date.date()}.csv",
-                mime="text/csv"
-            )
-            
-            st.markdown("### Preview")
-            st.dataframe(final_report.head(20), width="stretch", hide_index=True)
+
+        final_report = pd.concat(report_data, ignore_index=True)
+        csv = final_report.to_csv(index=False)
+
+        st.download_button(
+            label=" Download Report (CSV)",
+            data=csv,
+            file_name=f"report_{start_date.date()}_{end_date.date()}.csv",
+            mime="text/csv"
+        )
+
+        st.markdown("### Preview")
+        st.dataframe(final_report.head(20), width="stretch", hide_index=True)
     else:
         st.success(" No anomalies detected")
 
