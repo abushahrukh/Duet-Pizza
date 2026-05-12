@@ -1,4 +1,4 @@
-# 🍕 Pizza Intelligence Platform
+# Pizza Intelligence Platform
 
 Professional analytics dashboard for pizza business operations. Detects anomalies, forecasts demand, and provides actionable insights through machine learning.
 
@@ -19,43 +19,43 @@ The Pizza Intelligence Platform is a Streamlit-based analytics application that 
 
 ## Features
 
-### 📊 Overview Dashboard
+### Overview Dashboard
 - Total orders, revenue, and units sold
 - Top 10 best-performing products
 - Weekly order volume trends
 - Hourly order distribution patterns
 
-### ⚠️ Anomaly Detection
+### Anomaly Detection
 - Isolation Forest algorithm
 - Adjustable sensitivity (1-20%)
 - Temporal feature analysis (hour, day, month)
 - Detailed anomaly listings
 
-### 🎯 Customer Clustering
+### Customer Clustering
 - K-Means segmentation (2-7 clusters)
 - Elbow method for optimal K
 - PCA visualization in 2D space
 - Cluster characteristic analysis
 
-### 🔮 Demand Forecasting
+### Demand Forecasting
 - Ridge Regression model
 - 24-hour predictions
 - Peak hour identification
 - Lag-based temporal features
 
-### 💡 Cross-Sell Recommendations
+### Cross-Sell Recommendations
 - Co-occurrence analysis
 - Product pair frequency
 - Personalized "you may also like"
 - Data-driven bundling insights
 
-### 🥬 Ingredient Insights
+### Ingredient Insights
 - Top 15 ingredients by frequency
 - Performance metrics per ingredient
 - Supply chain planning data
 - Menu optimization guidance
 
-### 📄 Report Generation
+### Report Generation
 - Comprehensive anomaly reports
 - CSV export functionality
 - Date range selection
