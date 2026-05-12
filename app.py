@@ -269,8 +269,9 @@ def load_all_data():
     """Load and merge all pizza order data."""
     try:
         base_dir = os.path.dirname(os.path.abspath(__file__))
-        orders = pd.read_csv(os.path.join(base_dir, "orders.csv"), parse_dates=["date"], encoding='latin1')
-        orders["datetime"] = pd.to_datetime(orders["date"].astype(str) + " " + orders["time"])
+        orders = pd.read_csv(os.path.join(base_dir, "orders.csv"), encoding='latin1')
+        orders["datetime"] = pd.to_datetime(orders["date"] + " " + orders["time"])
+        orders["date"] = pd.to_datetime(orders["date"])
         
         order_details = pd.read_csv(os.path.join(base_dir, "order_details.csv"), encoding='latin1')
         pizzas = pd.read_csv(os.path.join(base_dir, "pizzas.csv"), encoding='latin1')
