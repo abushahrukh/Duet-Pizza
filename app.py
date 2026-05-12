@@ -13,7 +13,7 @@ import os
 import base64
 import warnings
 warnings.filterwarnings('ignore')
-
+pd.options.mode.chained_assignment = None
 # ==================== IMAGE LOADING ====================
 def load_image_b64(filename):
     base_dir = os.path.dirname(os.path.abspath(__file__))
@@ -354,7 +354,7 @@ def plot_chart(fig, title, height=500):
     )
     fig.update_xaxes(**axis_style)
     fig.update_yaxes(**axis_style)
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width="stretch")
 
 # ==================== SIDEBAR ====================
 with st.sidebar:
@@ -568,7 +568,7 @@ with tab2:
     
     if len(anomaly_df) > 0:
         anomaly_df.columns = ["Order ID", "Date", "Time", "Hour", "Day"]
-        st.dataframe(anomaly_df, use_container_width=True, hide_index=True)
+        st.dataframe(anomaly_df, width="stretch", hide_index=True)
     else:
         st.success(" No anomalies detected")
 
@@ -635,7 +635,7 @@ with tab3:
             # Profiles
             st.markdown("### Cluster Profiles")
             cluster_profile = order_features.drop("cluster", axis=1).groupby(order_features["cluster"]).mean()
-            st.dataframe(cluster_profile, use_container_width=True)
+            st.dataframe(cluster_profile, width="stretch")
         else:
             st.warning("Need more data for clustering")
     else:
@@ -753,7 +753,7 @@ with tab4:
             display_df = future_df.copy()
             display_df["hour_bin"] = display_df["hour_bin"].dt.strftime("%Y-%m-%d %H:%M")
             display_df.columns = ["Hour", "Forecast"]
-            st.dataframe(display_df, use_container_width=True, hide_index=True)
+            st.dataframe(display_df, width="stretch", hide_index=True)
         else:
             st.warning("Need more historical data")
     else:
@@ -788,7 +788,7 @@ with tab5:
         
         display_rec = rec_df[["pizza1_name", "pizza2_name", "count"]].head(10).copy()
         display_rec.columns = ["Product 1", "Product 2", "Co-Orders"]
-        st.dataframe(display_rec, use_container_width=True, hide_index=True)
+        st.dataframe(display_rec, width="stretch", hide_index=True)
     else:
         st.info("Not enough paired data")
     
@@ -888,10 +888,25 @@ with tab7:
     
     # Compile Report
     orders_copy = orders.copy()
-    orders_copy["hour"] = orders_copy["datetime"].dt.hour
-    orders_copy["day_of_week"] = orders_copy["datetime"].dt.dayofweek
-    orders_copy["month"] = orders_copy["datetime"].dt.month
-    orders_copy["is_weekend"] = (orders_copy["day_of_week"] >= 5).astype(int)
+
+# Modern pandas-safe hourly binning
+orders_copy["hour_bin"] = orders_copy["datetime"].dt.floor("h")
+
+# Aggregate hourly order counts
+hourly = (
+    orders_copy.groupby("hour_bin")
+    .size()
+    .reset_index(name="count")
+)
+
+# Fill missing hours
+hourly = (
+    hourly.set_index("hour_bin")
+    .asfreq("h", fill_value=0)
+    .reset_index()
+)
+
+hourly = hourly.sort_values("hour_bin").reset_index(drop=True)
     
     X_time = orders_copy[["hour", "day_of_week", "month", "is_weekend"]]
     model_time = IsolationForest(contamination=0.05, random_state=42)
@@ -946,7 +961,7 @@ with tab7:
             )
             
             st.markdown("### Preview")
-            st.dataframe(final_report.head(20), use_container_width=True, hide_index=True)
+            st.dataframe(final_report.head(20), width="stretch", hide_index=True)
     else:
         st.success(" No anomalies detected")
 
