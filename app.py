@@ -650,7 +650,7 @@ with tab4:
         orders_copy = orders.copy()
         orders_copy["hour_bin"] = orders_copy["datetime"].apply(lambda x: x.replace(minute=0, second=0, microsecond=0))
         hourly = orders_copy.groupby("hour_bin").size().reset_index(name="count")
-        hourly = hourly.sort_values("hour_bin")
+        hourly = hourly.sort_values("hour_bin").reset_index(drop=True)
         
         if len(hourly) > 24:
             # Features
