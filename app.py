@@ -648,9 +648,9 @@ with tab4:
     
     if len(orders) > 50:
         orders_copy = orders.copy()
-        orders_copy["hour_bin"] = orders_copy["datetime"].dt.floor(freq="H")
+        orders_copy["hour_bin"] = orders_copy["datetime"].apply(lambda x: x.replace(minute=0, second=0, microsecond=0))
         hourly = orders_copy.groupby("hour_bin").size().reset_index(name="count")
-        hourly = hourly.set_index("hour_bin").asfreq("H", fill_value=0).reset_index()
+        hourly = hourly.sort_values("hour_bin")
         
         if len(hourly) > 24:
             # Features
